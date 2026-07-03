@@ -128,6 +128,7 @@ python -m tachywooting.visualize logs/tracking.hdf5 --trial 1 --key 4
 
 - `WOOTING_ACQUISITION`: acquisition, threshold detection, readiness checks, and logging.
 - `convert_char_to_keycode`: convert between key labels and HID keycodes.
+- `convert_keycode_to_char`: convert between HID keycodes and key labels.
 - `load_trial`: load a single trial from an HDF5 log file.
 - `load_session`: load all trials from an HDF5 log file.
 - `trial_to_dataframe`: convert a trial dict to a pandas DataFrame.

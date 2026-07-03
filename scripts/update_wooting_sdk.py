@@ -13,6 +13,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import tarfile
@@ -24,7 +25,8 @@ from pathlib import Path
 
 
 REPO = "WootingKb/wooting-analog-sdk"
-TARGET_ROOT = Path("tachywooting/libraries")
+REPO_ROOT = Path(__file__).resolve().parent.parent
+TARGET_ROOT = REPO_ROOT / "tachywooting" / "libraries"
 
 
 @dataclass(frozen=True)
@@ -112,6 +114,24 @@ def read_json(url: str) -> dict:
         return json.loads(response.read().decode("utf-8"))
 
 
+VERSION_PATTERN = re.compile(r"v?\d+\.\d+\.\d+")
+
+
+def parse_version_arg(value: str) -> str:
+    """Parse --version, accepting a bare version, a tag, or a release URL/anchor.
+
+    Examples that all resolve to "0.9.1":
+      --version=0.9.1
+      --version=v0.9.1
+      --version=https://github.com/WootingKb/wooting-analog-sdk/releases/tag/v0.9.1
+      --version=https://github.com/WootingKb/wooting-analog-sdk/releases#release-v0.9.1
+    """
+    match = VERSION_PATTERN.search(value)
+    if not match:
+        raise argparse.ArgumentTypeError(f"Could not find a version (e.g. v0.9.1) in {value!r}")
+    return match.group(0)
+
+
 def normalize_version(version: str) -> str:
     return version[1:] if version.startswith("v") else version
 
@@ -189,14 +209,19 @@ def archive_root(extracted_root: Path) -> Path:
     return extracted_root
 
 
-def copy_platform_tree(platform: str, extracted_root: Path, target_dir: Path) -> list[str]:
+def copy_platform_tree(platform: str, extracted_root: Path, target_dir: Path) -> list[str] | None:
+    """Vendor one platform's SDK files, or None if the download is unusable."""
     source_root = archive_root(extracted_root)
     missing = [path for path in REQUIRED_PATHS[platform] if not (source_root / path).is_file()]
     if missing:
         raise RuntimeError(
             f"{platform} archive is missing required SDK files: {', '.join(missing)}"
         )
-    warn_arch_mismatches(platform, source_root)
+    try:
+        check_arch_mismatches(platform, source_root)
+    except RuntimeError as e:
+        print(f"Skipping {platform}: {e}\nKeeping existing files in {target_dir}.")
+        return None
 
     if target_dir.exists():
         shutil.rmtree(target_dir)
@@ -218,30 +243,24 @@ def copy_platform_tree(platform: str, extracted_root: Path, target_dir: Path) ->
     return sorted(copied)
 
 
-def warn_arch_mismatches(platform: str, source_root: Path) -> None:
-    """Warn when an official archive's Mach-O architecture does not match its name."""
+def check_arch_mismatches(platform: str, source_root: Path) -> None:
+    """Abort if an official archive's Mach-O architecture doesn't match its name."""
     expected_markers = EXPECTED_ARCH_MARKERS.get(platform)
     if not expected_markers:
         return
 
     for relative_path, expected_marker in expected_markers.items():
         path = source_root / relative_path
-        try:
-            result = subprocess.run(
-                ["file", str(path)],
-                check=False,
-                capture_output=True,
-                text=True,
-            )
-        except OSError:
-            return
+        result = subprocess.run(["file", str(path)], check=False, capture_output=True, text=True)
+        if result.returncode != 0:
+            continue  # `file` unavailable; nothing we can verify
 
         description = result.stdout.strip().split(":", 1)[-1]
-        if result.returncode == 0 and expected_marker not in description:
-            print(
-                "Warning: "
-                f"{platform} expected {expected_marker} for {relative_path}, "
-                f"but file reports: {description}"
+        if expected_marker not in description:
+            raise RuntimeError(
+                f"{platform}: expected {expected_marker} for {relative_path}, "
+                f"but file reports: {description}. This is an upstream Wooting "
+                f"SDK packaging bug -- do not vendor this asset."
             )
 
 
@@ -266,13 +285,47 @@ def fix_macos_install_names(platform: str, target_dir: Path) -> None:
         )
 
 
+def read_manifest_platforms(path: Path) -> dict[str, dict]:
+    """Load per-platform manifest entries, migrating the old flat schema if needed.
+
+    The manifest used to have a single top-level "version"/"source" applied to
+    every platform. That breaks down once a platform's update is skipped (e.g.
+    an upstream arch-mismatch bug) and it stays on an older SDK version than
+    its siblings, so each platform now tracks its own version/source/files.
+    """
+    if not path.is_file():
+        return {}
+    try:
+        existing = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+    platforms = existing.get("platforms", {})
+    old_version = existing.get("version")
+    old_source = existing.get("source")
+
+    migrated = {}
+    for platform, entry in platforms.items():
+        if isinstance(entry, list):
+            migrated[platform] = {"version": old_version, "source": old_source, "files": entry}
+        else:
+            migrated[platform] = entry
+    return migrated
+
+
 def write_manifest(version: str, copied: dict[str, list[str]]) -> None:
-    manifest = {
-        "source": f"https://github.com/{REPO}/releases/tag/{release_tag(version)}",
-        "version": normalize_version(version),
-        "platforms": copied,
-    }
     path = TARGET_ROOT / "VERSION.json"
+    platforms = read_manifest_platforms(path)
+
+    source = f"https://github.com/{REPO}/releases/tag/{release_tag(version)}"
+    for platform, files in copied.items():
+        platforms[platform] = {
+            "version": normalize_version(version),
+            "source": source,
+            "files": files,
+        }
+
+    manifest = {"platforms": platforms}
     path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
@@ -294,6 +347,8 @@ def update(version: str) -> None:
             extract_archive(archive, extract_dir)
 
             copied = copy_platform_tree(plan.platform, extract_dir, plan.target_dir)
+            if copied is None:
+                continue  # unusable upstream asset; existing vendored files kept as-is
             copied_by_platform[plan.platform] = copied
             print(f"Updated {plan.target_dir}: {', '.join(copied) if copied else 'no files copied'}")
 
@@ -302,7 +357,17 @@ def update(version: str) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--version", default="0.9.1", help="Wooting SDK version, e.g. 0.9.1")
+    parser.add_argument(
+        "--version",
+        default="0.9.1",
+        type=parse_version_arg,
+        help=(
+            "Wooting SDK version to vendor. Accepts a bare version (0.9.1), a tag "
+            "(v0.9.1), or a GitHub release URL/anchor, e.g. "
+            "https://github.com/WootingKb/wooting-analog-sdk/releases/tag/v0.9.1 or "
+            "https://github.com/WootingKb/wooting-analog-sdk/releases#release-v0.9.1"
+        ),
+    )
     args = parser.parse_args()
     update(args.version)
 

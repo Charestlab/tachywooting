@@ -52,7 +52,9 @@ The script:
 - downloads GitHub release assets for macOS arm64/x86_64, Linux, and Windows
 - verifies SHA256 (release metadata or `KNOWN_SHA256` fallback)
 - extracts archives and replaces target platform directories
-- updates `tachywooting/libraries/VERSION.json`
+- updates `tachywooting/libraries/VERSION.json` (per-platform `version`/`source`/`files`; a
+  platform skipped due to an upstream packaging bug keeps its previously vendored version instead
+  of being force-marked as the new one)
 - adjusts macOS install names for dylibs when needed
 
 ### SDK update best practices

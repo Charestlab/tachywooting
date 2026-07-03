@@ -161,6 +161,20 @@ def _ensure_sane_shared_lib_name(lib_path: str, filename: str) -> None:
         subprocess.run(write, check=True)
 
 
+def _ensure_sane_arch(lib_path: str, expected_arch: str) -> None:
+    """Abort if a vendored macOS dylib isn't built for the target architecture.    """
+    try:
+        out = subprocess.run(["file", lib_path], capture_output=True, text=True, check=True).stdout
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return
+    description = out.strip().split(":", 1)[-1]  # path itself may contain the arch name
+    if expected_arch not in description:
+        raise RuntimeError(
+            f"{lib_path} is not built for {expected_arch} ({description.strip()}). "
+            "Known upstream Wooting SDK packaging bug -- see scripts/update_wooting_sdk.py."
+        )
+
+
 def get_platform_config(binary_dir, include_dir):
     """Return platform-specific compile/link configuration."""
     arch = _norm_arch()
@@ -171,9 +185,9 @@ def get_platform_config(binary_dir, include_dir):
         compile_args = [
             f"-I{include_dir}",
         ]
-        _ensure_sane_shared_lib_name(
-            os.path.join(binary_dir, f"lib{SDK_LIBRARY_NAME}.dylib"), f"lib{SDK_LIBRARY_NAME}.dylib"
-        )
+        dylib_path = os.path.join(binary_dir, f"lib{SDK_LIBRARY_NAME}.dylib")
+        _ensure_sane_arch(dylib_path, arch)
+        _ensure_sane_shared_lib_name(dylib_path, f"lib{SDK_LIBRARY_NAME}.dylib")
         # @loader_path resolves relative to the compiled extension at runtime.
         extra_link_args = [
             f"-Wl,-rpath,@loader_path/../libraries/darwin/{arch}/release",

@@ -1,42 +1,56 @@
 {
   "platforms": {
-    "darwin_arm64": [
-      "BUILD.md",
-      "INSTALL.md",
-      "MIGRATION_GUIDE.md",
-      "PLUGINS.md",
-      "SDK_USAGE.md",
-      "includes",
-      "release"
-    ],
-    "darwin_x86_64": [
-      "BUILD.md",
-      "INSTALL.md",
-      "MIGRATION_GUIDE.md",
-      "PLUGINS.md",
-      "SDK_USAGE.md",
-      "includes",
-      "release"
-    ],
-    "linux": [
-      "BUILD.md",
-      "INSTALL.md",
-      "MIGRATION_GUIDE.md",
-      "PLUGINS.md",
-      "SDK_USAGE.md",
-      "includes",
-      "release"
-    ],
-    "windows": [
-      "BUILD.md",
-      "INSTALL.md",
-      "MIGRATION_GUIDE.md",
-      "PLUGINS.md",
-      "SDK_USAGE.md",
-      "includes",
-      "release"
-    ]
-  },
-  "source": "https://github.com/WootingKb/wooting-analog-sdk/releases/tag/v0.9.1",
-  "version": "0.9.1"
+    "darwin_arm64": {
+      "files": [
+        "BUILD.md",
+        "INSTALL.md",
+        "MIGRATION_GUIDE.md",
+        "PLUGINS.md",
+        "SDK_USAGE.md",
+        "includes",
+        "release"
+      ],
+      "source": "https://github.com/WootingKb/wooting-analog-sdk/releases/tag/v0.9.1",
+      "version": "0.9.1"
+    },
+    "darwin_x86_64": {
+      "files": [
+        "BUILD.md",
+        "INSTALL.md",
+        "MIGRATION_GUIDE.md",
+        "PLUGINS.md",
+        "SDK_USAGE.md",
+        "includes",
+        "release"
+      ],
+      "source": "https://github.com/WootingKb/wooting-analog-sdk/releases/tag/v0.9.1",
+      "version": "0.9.1"
+    },
+    "linux": {
+      "files": [
+        "BUILD.md",
+        "INSTALL.md",
+        "MIGRATION_GUIDE.md",
+        "PLUGINS.md",
+        "SDK_USAGE.md",
+        "includes",
+        "release"
+      ],
+      "source": "https://github.com/WootingKb/wooting-analog-sdk/releases/tag/v0.9.1",
+      "version": "0.9.1"
+    },
+    "windows": {
+      "files": [
+        "BUILD.md",
+        "INSTALL.md",
+        "MIGRATION_GUIDE.md",
+        "PLUGINS.md",
+        "SDK_USAGE.md",
+        "includes",
+        "release"
+      ],
+      "source": "https://github.com/WootingKb/wooting-analog-sdk/releases/tag/v0.9.1",
+      "version": "0.9.1"
+    }
+  }
 }
