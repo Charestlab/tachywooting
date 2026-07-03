@@ -137,6 +137,30 @@ def get_library_dir():
     return get_binary_dir(get_platform_dir())
 
 
+def _ensure_sane_shared_lib_name(lib_path: str, filename: str) -> None:
+    """Fix a vendored lib's embedded name if upstream baked in a build-machine
+    path instead of a bare filename (breaks our rpath-based linking). No-op
+    on Windows, which has no equivalent concept for .dll files.
+    """
+    if SYSTEM == "linux":
+        read = ["patchelf", "--print-soname", lib_path]
+        expected, write = filename, ["patchelf", "--set-soname", filename, lib_path]
+    elif SYSTEM == "darwin":
+        read = ["otool", "-D", lib_path]
+        expected, write = f"@rpath/{filename}", ["install_name_tool", "-id", f"@rpath/{filename}", lib_path]
+    else:
+        return
+
+    try:
+        current = subprocess.run(read, capture_output=True, text=True, check=True).stdout.strip().splitlines()[-1]
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return
+
+    if current != expected:
+        print(f"[Wooting] Fixing {lib_path} name: {current!r} -> {expected!r}")
+        subprocess.run(write, check=True)
+
+
 def get_platform_config(binary_dir, include_dir):
     """Return platform-specific compile/link configuration."""
     arch = _norm_arch()
@@ -147,6 +171,9 @@ def get_platform_config(binary_dir, include_dir):
         compile_args = [
             f"-I{include_dir}",
         ]
+        _ensure_sane_shared_lib_name(
+            os.path.join(binary_dir, f"lib{SDK_LIBRARY_NAME}.dylib"), f"lib{SDK_LIBRARY_NAME}.dylib"
+        )
         # @loader_path resolves relative to the compiled extension at runtime.
         extra_link_args = [
             f"-Wl,-rpath,@loader_path/../libraries/darwin/{arch}/release",
@@ -161,9 +188,11 @@ def get_platform_config(binary_dir, include_dir):
             f"-I{include_dir}",
             f"-I{py_inc}",
         ]
+        sdk_so_path = os.path.join(binary_dir, f"lib{SDK_LIBRARY_NAME}.so")
+        _ensure_sane_shared_lib_name(sdk_so_path, f"lib{SDK_LIBRARY_NAME}.so")
         # $ORIGIN resolves relative to the compiled extension on ELF platforms.
         extra_link_args = [
-            os.path.join(binary_dir, f"lib{SDK_LIBRARY_NAME}.so"),
+            sdk_so_path,
             "-Wl,-rpath,$ORIGIN/../libraries/linux/release",
         ]
         system_libs = []

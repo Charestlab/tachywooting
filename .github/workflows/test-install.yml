@@ -121,5 +121,21 @@ jobs:
       - name: Build native interface
         run: python -c "from tachywooting.package_setup import build_interface_if_needed; build_interface_if_needed()"
 
+      - name: Show compiled extension dependencies (debug)
+        if: runner.os == 'Linux'
+        run: |
+          SO_PATH=$(python -c "import glob; print(glob.glob('tachywooting/interface/wooting_interface*.so')[0])")
+          echo "Extension: $SO_PATH"
+          ldd "$SO_PATH" || true
+
       - name: Confirm interface loaded
-        run: python -c "import tachywooting; assert tachywooting.lib is not None and tachywooting.ffi is not None, 'native interface failed to load after build'"
+        run: |
+          python -c "
+          import importlib
+          try:
+              mod = importlib.import_module('tachywooting.interface.wooting_interface')
+          except Exception as e:
+              raise SystemExit(f'native module import failed: {e!r}')
+          import tachywooting
+          assert tachywooting.lib is not None and tachywooting.ffi is not None, 'native interface failed to load after build'
+          "
