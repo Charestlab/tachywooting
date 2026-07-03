@@ -45,8 +45,11 @@ _LIBRARIES_DIR = os.path.join(_PKG_DIR, "libraries")
 _SDK_LIBRARY_BASENAME = "wooting_analog_sdk"
 _SDK_DIST_LIBRARY_BASENAME = "wooting_analog_sdk_dist"
 
-# Any file produced by cffi will match this pattern
-_COMPILED_GLOB = os.path.join(_INTERFACE_DIR, "wooting_interface*")
+# Compiled CFFI extension only (.so on Linux/macOS, .pyd on Windows)
+_COMPILED_GLOBS = (
+    os.path.join(_INTERFACE_DIR, "wooting_interface*.so"),
+    os.path.join(_INTERFACE_DIR, "wooting_interface*.pyd"),
+)
 
 # Plugin directory paths per platform
 _PLUGIN_DIRS = {
@@ -58,7 +61,7 @@ _PLUGIN_DIRS = {
 
 def _compiled_interface_present() -> bool:
     """Return True if any compiled CFFI module is already present."""
-    return len(glob.glob(_COMPILED_GLOB)) > 0
+    return any(glob.glob(pattern) for pattern in _COMPILED_GLOBS)
 
 
 def _make_executable(path: str) -> None:

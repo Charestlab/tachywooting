@@ -967,7 +967,7 @@ class WOOTING_ACQUISITION:
         ``WootingAnalogResult_NoMapping`` for keycodes that have no physical key
         on the device (e.g. asking for F1 on a 3-key UwU keyboard).
         """
-        if not self.initialized:
+        if not self.initialized or lib is None:
             return
         no_mapping = int(lib.WootingAnalogResult_NoMapping)
         for code in target_codes:
