@@ -23,7 +23,6 @@ import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 
-
 REPO = "WootingKb/wooting-analog-sdk"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 TARGET_ROOT = REPO_ROOT / "tachywooting" / "libraries"

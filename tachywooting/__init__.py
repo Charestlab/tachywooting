@@ -21,10 +21,17 @@ except PackageNotFoundError:
 
 # Keep package import side-effect free: building permissions/native CFFI is done explicitly
 # with `wooting-build-interface` so imports stay safe in tests, docs, and CI.
-from .interface import lib, ffi
-from .wooting_interface_builder import build_interface
-from .wooting_utils import WOOTING_ACQUISITION, convert_char_to_keycode, convert_keycode_to_char, load_trial, trial_to_dataframe, load_session
+from .interface import ffi, lib
 from .package_setup import delete_interface
+from .wooting_interface_builder import build_interface
+from .wooting_utils import (
+    WOOTING_ACQUISITION,
+    convert_char_to_keycode,
+    convert_keycode_to_char,
+    load_session,
+    load_trial,
+    trial_to_dataframe,
+)
 
 __all__ = [
     "WOOTING_ACQUISITION",

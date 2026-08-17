@@ -9,7 +9,7 @@ This document is a maintainer guide for the TachyWooting project.
 Prerequisites
 ~~~~~~~~~~~~~
 
-- Python 3.10+
+- Python 3.9+ (CI covers 3.9-3.14)
 - A local C compiler toolchain (for CFFI)
 - Docker Desktop (if you run workflows with ``act``)
 

@@ -24,17 +24,18 @@ IMPORTANT NOTE ABOUT "CLEARING" BUFFERS:
 
 from __future__ import annotations
 
+import glob
 import importlib
 import logging
 import os
-import glob
 import time
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union, Literal, Set
+from collections.abc import Sequence
+from typing import Any, Callable, Literal
 
 import h5py
 import numpy as np
 
-from tachywooting.interface import MISSING_INTERFACE_MESSAGE, NO_DEVICE_MESSAGE, lib, ffi
+from tachywooting.interface import MISSING_INTERFACE_MESSAGE, NO_DEVICE_MESSAGE, ffi, lib
 
 _log = logging.getLogger(__name__)
 
@@ -293,13 +294,13 @@ def _timestamped_if_exists(path: str) -> str:
 
 def _write_trial_file(
     path: str,
-    hier_trial: Dict[str, Dict[str, Dict[str, Sequence[float]]]],
-    backend: Optional[str] = None,
-    trial_start_perf_ns: Optional[int] = None,
-    trial_start_clock: Optional[str] = None,
-    threshold: Optional[float] = None,
-    threshold_time: Optional[float] = None,
-    threshold_key: Optional[int] = None,
+    hier_trial: dict[str, dict[str, dict[str, Sequence[float]]]],
+    backend: str | None = None,
+    trial_start_perf_ns: int | None = None,
+    trial_start_clock: str | None = None,
+    threshold: float | None = None,
+    threshold_time: float | None = None,
+    threshold_key: int | None = None,
 ) -> None:
 
     """Write one per-trial shard as hierarchical HDF5.
@@ -470,7 +471,7 @@ def _combine_all_trials(staging_dir: str, final_dir: str, base: str) -> None:
             pass
 
 
-_ACTIVE_LOGGERS: Set["WOOTING_ACQUISITION"] = set()
+_ACTIVE_LOGGERS: set[WOOTING_ACQUISITION] = set()
 
 
 # ============================================================
@@ -700,14 +701,14 @@ class WOOTING_ACQUISITION:
         self.log_dir: str = os.getcwd()
         self.log_base: str = "wooting_logs"
         self.trial_pad: int = 4
-        self.output_paths: Dict[str, str] = {}
-        self.staging_dir: Optional[str] = None
+        self.output_paths: dict[str, str] = {}
+        self.staging_dir: str | None = None
 
         # cache of last trial's stimulus-onset reference (persisted to HDF5)
-        self._last_trial_start_perf_ns: Optional[int] = None
-        self._last_trial_start_clock: Optional[str] = None
-        self._last_threshold_time: Optional[float] = None
-        self._last_threshold_key: Optional[int] = None
+        self._last_trial_start_perf_ns: int | None = None
+        self._last_trial_start_clock: str | None = None
+        self._last_threshold_time: float | None = None
+        self._last_threshold_key: int | None = None
 
         # --- buffers for read_full_buffer ---
         self._fullbuf_len: int = int(full_buffer_len)
@@ -715,13 +716,13 @@ class WOOTING_ACQUISITION:
         self._analog_buf = ffi.new(f"float[{self._fullbuf_len}]")
 
         # cache for targets
-        self._target_codes_cache: Optional[Tuple[int, ...]] = None
-        self._target_set_cache: Optional[Set[int]] = None
+        self._target_codes_cache: tuple[int, ...] | None = None
+        self._target_set_cache: set[int] | None = None
 
         self.total_trials: int = 0
         self.removal_trials: int = 0
-        self.removal_trial_indices: List[int] = []
-        self._removal_trial_index_set: Set[int] = set()
+        self.removal_trial_indices: list[int] = []
+        self._removal_trial_index_set: set[int] = set()
         self.current_removal_streak: int = 0
         self.max_removal_streak: int = 0
         self.last_trial_had_removal: bool = False
@@ -819,7 +820,7 @@ class WOOTING_ACQUISITION:
             "analog" if int_analog == 2 else "integer",
         )
 
-    def _write_hdf5_trial_shard(self, hier: Dict[str, Dict[str, Dict[str, Sequence[float]]]]) -> None:
+    def _write_hdf5_trial_shard(self, hier: dict[str, dict[str, dict[str, Sequence[float]]]]) -> None:
         if not self.staging_dir:
             raise RuntimeError("Logging enabled but staging_dir is not set. Call setup_logging().")
 
@@ -942,7 +943,7 @@ class WOOTING_ACQUISITION:
 
     # ---------------- helpers ----------------
 
-    def _to_keycodes(self, target_keys: Sequence[Union[str, int]]) -> List[int]:
+    def _to_keycodes(self, target_keys: Sequence[str | int]) -> list[int]:
         if not isinstance(target_keys, list):
             raise TypeError("target_keys must be a list of character(s) or integer(s)")
 
@@ -980,14 +981,14 @@ class WOOTING_ACQUISITION:
                     code, label,
                 )
 
-    def _ensure_target_cache(self, target_codes: Sequence[int]) -> Tuple[Tuple[int, ...], Set[int]]:
+    def _ensure_target_cache(self, target_codes: Sequence[int]) -> tuple[tuple[int, ...], set[int]]:
         tgt_tuple = tuple(int(c) for c in target_codes)
         if self._target_codes_cache != tgt_tuple:
             self._target_codes_cache = tgt_tuple
             self._target_set_cache = set(tgt_tuple)
         return self._target_codes_cache, self._target_set_cache  # type: ignore[return-value]
 
-    def _read_positions_full_buffer(self, target_codes: Sequence[int]) -> Dict[int, float]:
+    def _read_positions_full_buffer(self, target_codes: Sequence[int]) -> dict[int, float]:
         """One call per tick. Returns {code: position} for ALL targets, defaulting to 0.0."""
         tgt_tuple, tgt_set = self._ensure_target_cache(target_codes)
 
@@ -1007,9 +1008,9 @@ class WOOTING_ACQUISITION:
 
         return out
 
-    def _read_positions_read_analog(self, target_codes: Sequence[int]) -> Dict[int, float]:
+    def _read_positions_read_analog(self, target_codes: Sequence[int]) -> dict[int, float]:
         """Poll each target key. Returns {code: position} for all targets."""
-        out: Dict[int, float] = {}
+        out: dict[int, float] = {}
         for c in target_codes:
             v = float(lib.wooting_analog_read_analog(int(c)))
             if v < 0:
@@ -1017,7 +1018,7 @@ class WOOTING_ACQUISITION:
             out[int(c)] = v
         return out
 
-    def read_pressure(self, key: Union[str, int]) -> float:
+    def read_pressure(self, key: str | int) -> float:
         """Return the current analog pressure of a single key (0.0–1.0).
 
         Parameters
@@ -1041,7 +1042,7 @@ class WOOTING_ACQUISITION:
         codes = self._to_keycodes([key])
         return float(self._read_positions_for_targets(codes)[codes[0]])
 
-    def read_pressures(self, keys: Sequence[Union[str, int]]) -> Dict[str, float]:
+    def read_pressures(self, keys: Sequence[str | int]) -> dict[str, float]:
         """Return the current analog pressures of multiple keys.
 
         Parameters
@@ -1074,7 +1075,7 @@ class WOOTING_ACQUISITION:
         # auto
         return "read_analog" if len(target_codes) <= 1 else "read_full_buffer"
 
-    def _read_positions_for_targets(self, target_codes: Sequence[int]) -> Dict[int, float]:
+    def _read_positions_for_targets(self, target_codes: Sequence[int]) -> dict[int, float]:
         chosen = self._choose_backend(target_codes)
         self.last_backend = chosen
         if chosen == "read_full_buffer":
@@ -1143,7 +1144,7 @@ class WOOTING_ACQUISITION:
 
     def get_response_key(
         self,
-        hier: Optional[Dict[str, Dict[str, Dict[str, Any]]]] = None,
+        hier: dict[str, dict[str, dict[str, Any]]] | None = None,
     ) -> tuple:
         """Return (keycode, rt) of the first key to cross the threshold.
 
@@ -1231,10 +1232,10 @@ class WOOTING_ACQUISITION:
 
     def _finalize_bins_to_hier(
         self,
-        bins: Dict[Tuple[int, int], List[Tuple[float, float, float]]],
-    ) -> Dict[str, Dict[str, Dict[str, np.ndarray]]]:
+        bins: dict[tuple[int, int], list[tuple[float, float, float]]],
+    ) -> dict[str, dict[str, dict[str, np.ndarray]]]:
         """bins[(trial, keycode)] = [(tth, tabs, pos), ...]"""
-        hier: Dict[str, Dict[str, Dict[str, np.ndarray]]] = {}
+        hier: dict[str, dict[str, dict[str, np.ndarray]]] = {}
         for (t, k), triplets in bins.items():
             triplets.sort(key=lambda x: x[0])  # by time_from_onset
             tth = np.fromiter((x[0] for x in triplets), dtype=np.float64, count=len(triplets))
@@ -1251,17 +1252,17 @@ class WOOTING_ACQUISITION:
 
     def _acquire_raw_values(
         self,
-        target_keys: Sequence[Union[str, int]],
+        target_keys: Sequence[str | int],
         duration_after_threshold: float = 0.5,
-        duration_before_threshold: Optional[float] = None,
+        duration_before_threshold: float | None = None,
         sampling_interval: float = 1 / 8000,
         verbose: bool = False,
-        trial_start_ns: Optional[int] = None,
+        trial_start_ns: int | None = None,
         trial_start_clock: str = "perf",
         callback: Callable[[], None] | None = None,
         callback_delay: float | None = None,
-        quit_key: Optional[Union[str, int]] = None,
-    ) -> Dict[str, Dict[str, Dict[str, np.ndarray]]]:
+        quit_key: str | int | None = None,
+    ) -> dict[str, dict[str, dict[str, np.ndarray]]]:
         """
         Low-level acquisition of analog key positions around a threshold crossing.
 
@@ -1294,7 +1295,7 @@ class WOOTING_ACQUISITION:
                 raise ValueError("callback_delay must be > 0 when callback is provided.")
 
         # --- quit key handling (optional) ---
-        quit_code: Optional[int] = None
+        quit_code: int | None = None
         quit_pressed = False
         if quit_key is not None:
             q = self._to_keycodes([quit_key])
@@ -1335,7 +1336,7 @@ class WOOTING_ACQUISITION:
         triggered = False
         trigger_perf_ns = None
         trial_had_removal = False
-        bins: Dict[Tuple[int, int], List[Tuple[float, float, float]]] = {}
+        bins: dict[tuple[int, int], list[tuple[float, float, float]]] = {}
 
         next_t = time.perf_counter()
         interval = float(sampling_interval)
@@ -1439,16 +1440,16 @@ class WOOTING_ACQUISITION:
     
     def acquire_analog_values(
         self,
-        target_keys: Sequence[Union[str, int]],
+        target_keys: Sequence[str | int],
         duration_after_threshold: float = 0.5,
-        duration_before_threshold: Optional[float] = 0.2,
+        duration_before_threshold: float | None = 0.2,
         sampling_interval: float = 1 / 8000,
         verbose: bool = False,
-        trial_start_ns: Optional[int] = None,
+        trial_start_ns: int | None = None,
         trial_start_clock: str = "perf",
         callback: Callable[[], None] | None = None,
         callback_delay: float | None = None,
-        quit_key: Optional[Union[str, int]] = None,
+        quit_key: str | int | None = None,
     ):
         """
         Acquire analog key trajectories (0.0–1.0) around a threshold crossing.
@@ -1587,16 +1588,16 @@ class WOOTING_ACQUISITION:
 
     def acquire_integer_values(
         self,
-        target_keys: Sequence[Union[str, int]],
+        target_keys: Sequence[str | int],
         duration_after_threshold: float = 0.5,
-        duration_before_threshold: Optional[float] = 0.2,
+        duration_before_threshold: float | None = 0.2,
         sampling_interval: float = 1 / 8000,
         verbose: bool = False,
-        trial_start_ns: Optional[int] = None,
+        trial_start_ns: int | None = None,
         trial_start_clock: str = "perf",
         callback: Callable[[], None] | None = None,
         callback_delay: float | None = None,
-        quit_key: Optional[Union[str, int]] = None,
+        quit_key: str | int | None = None,
     ):
         """
         Acquire quantized (integer) key trajectories (0–255) around a threshold crossing.
@@ -2087,7 +2088,7 @@ class WOOTING_ACQUISITION:
 # Offline data helpers (no keyboard required)
 # ============================================================
 
-def load_trial(hdf5_path: str, trial_id: Union[int, str]) -> Dict[str, Any]:
+def load_trial(hdf5_path: str, trial_id: int | str) -> dict[str, Any]:
     """Load a single trial from an HDF5 acquisition file.
 
     Parameters
@@ -2138,14 +2139,14 @@ def load_trial(hdf5_path: str, trial_id: Union[int, str]) -> Dict[str, Any]:
             raise KeyError(f"Trial {trial_key!r} not found. Available trials: {available}")
 
         g_trial = f["trials"][trial_key]
-        attrs: Dict[str, Any] = {}
+        attrs: dict[str, Any] = {}
         for k, v in g_trial.attrs.items():
             attrs[k] = v.decode() if isinstance(v, (bytes, np.bytes_)) else v
         # Backward compatibility: older logs named this attribute "stim_on_clock".
         if "stim_on_clock" in attrs and "trial_start_clock" not in attrs:
             attrs["trial_start_clock"] = attrs.pop("stim_on_clock")
 
-        result: Dict[str, Any] = {}
+        result: dict[str, Any] = {}
         g_keys = g_trial.get("keys")
         if g_keys is not None:
             for key_name, g_key in g_keys.items():
@@ -2162,7 +2163,7 @@ def load_trial(hdf5_path: str, trial_id: Union[int, str]) -> Dict[str, Any]:
         return result
 
 
-def trial_to_dataframe(trial_data: Dict[str, Any]) -> "Any":
+def trial_to_dataframe(trial_data: dict[str, Any]) -> Any:
     """Convert a trial dict from :func:`load_trial` to a long-format pandas DataFrame.
 
     Parameters
@@ -2211,7 +2212,7 @@ def trial_to_dataframe(trial_data: Dict[str, Any]) -> "Any":
     return pd.concat(frames, ignore_index=True)
 
 
-def load_session(hdf5_path: str, include_attrs: bool = True) -> "Any":
+def load_session(hdf5_path: str, include_attrs: bool = True) -> Any:
     """Load all trials from an HDF5 acquisition file into a single long-format DataFrame.
 
     Iterates over every trial in the file and stacks them into one pandas
@@ -2269,7 +2270,7 @@ def load_session(hdf5_path: str, include_attrs: bool = True) -> "Any":
             g_trial = f["trials"][trial_name]
             trial_num = int(trial_name)
 
-            attrs: Dict[str, Any] = {}
+            attrs: dict[str, Any] = {}
             if include_attrs:
                 for k, v in g_trial.attrs.items():
                     attrs[k] = v.decode() if isinstance(v, (bytes, np.bytes_)) else v

@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """
-Test threshold metadata logging with multiple keys
+Manual hardware script (not run by pytest/CI) for threshold metadata logging
+with multiple keys. Requires a physical Wooting keyboard.
+Run directly: python tests/manual/manual_threshold_metadata.py
 """
-from tachywooting.wooting_utils import WOOTING_ACQUISITION
 import h5py
+
+from tachywooting.wooting_utils import WOOTING_ACQUISITION
+
 
 def main():
     print("\n" + "="*70)
@@ -15,7 +19,7 @@ def main():
     acq.setup_logging(name='test_threshold_metadata', path='/tmp', int_analog=2)
     
     print("\n[Trial 1] Press 'Z' key to threshold (0.6)...")
-    data1 = acq.acquire_analog_values(
+    acq.acquire_analog_values(
         ['Z', 'C'],  # monitoring both Z and C
         duration_after_threshold=0.3,
         duration_before_threshold=0.1,
@@ -23,7 +27,7 @@ def main():
     )
     
     print("\n[Trial 2] Press 'C' key to threshold (0.6)...")
-    data2 = acq.acquire_analog_values(
+    acq.acquire_analog_values(
         ['Z', 'C'],  # monitoring both Z and C
         duration_after_threshold=0.3,
         duration_before_threshold=0.1,

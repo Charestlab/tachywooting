@@ -27,7 +27,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
         extras: ["", "dev", "all"]
 
     steps:
@@ -73,7 +73,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
       - uses: actions/checkout@v4
@@ -97,8 +97,10 @@ jobs:
         run: pytest tests/ -v --tb=short
 
   # ── Verify the native CFFI interface actually compiles on each OS ───────────
-  # abi3 (stable ABI) means one build per OS covers every Python version, so
-  # this only needs a single representative interpreter.
+  # One Python version is enough here — the `install` job's matrix already
+  # compiles this extension on every supported version. This job instead
+  # exercises the standalone wooting-build-interface rebuild path and
+  # inspects the resulting binary (ldd, successful import).
   build-interface:
     name: "build interface / ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}

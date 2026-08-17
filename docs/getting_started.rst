@@ -49,10 +49,32 @@ Features
 Requirements
 ------------
 
-- Python 3.10 or newer.
+- Python 3.9 or newer (through 3.14).
 - A supported Wooting analog keyboard.
-- A local compiler toolchain for the CFFI interface build.
+- A local compiler toolchain for the CFFI interface build (see below).
 - Platform-specific permissions for USB/native library access.
+
+Compiler Setup
+~~~~~~~~~~~~~~
+
+The CFFI extension is compiled on your machine, not shipped as a prebuilt
+binary, so you need a C compiler available before the interface can be
+built.
+
+- **macOS**: install the Xcode Command Line Tools: ``xcode-select --install``.
+- **Linux**: install ``gcc`` via your package manager, e.g.
+  ``sudo apt install build-essential`` (Debian/Ubuntu) or
+  ``sudo dnf groupinstall "Development Tools"`` (Fedora).
+- **Windows**: install the "Desktop development with C++" workload from the
+  `Visual Studio Build Tools <https://visualstudio.microsoft.com/visual-cpp-build-tools/>`_
+  (no full Visual Studio install needed), or run:
+
+  .. code:: powershell
+
+     winget install --id Microsoft.VisualStudio.2022.BuildTools --override "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+
+  Then use an "x64 Native Tools Command Prompt" (or restart your shell so
+  ``cl.exe`` is on ``PATH``) before installing ``tachywooting``.
 
 Quick Start
 ~~~~~~~~~~~

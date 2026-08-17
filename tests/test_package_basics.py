@@ -1,11 +1,16 @@
-import pytest
 import os
 import re
 import sys
 
+import pytest
+
 import tachywooting
-from tachywooting import WOOTING_ACQUISITION, convert_char_to_keycode, package_setup
-from tachywooting import wooting_interface_builder
+from tachywooting import (
+    WOOTING_ACQUISITION,
+    convert_char_to_keycode,
+    package_setup,
+    wooting_interface_builder,
+)
 
 
 def test_import_does_not_require_built_native_interface():
