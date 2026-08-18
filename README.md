@@ -51,14 +51,18 @@ you need a C compiler available before the interface can be built.
   (Debian/Ubuntu) or `sudo dnf groupinstall "Development Tools"` (Fedora).
 - **Windows**: install the "Desktop development with C++" workload from the
   [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
-  (no full Visual Studio install needed), or run:
+  (no full Visual Studio install needed), or from an **elevated** PowerShell
+  prompt (Run as administrator), run:
 
   ```powershell
-  winget install --id Microsoft.VisualStudio.2022.BuildTools --override "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+  winget install -e --id Microsoft.VisualStudio.BuildTools --override "--passive --wait --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --includeRecommended"
   ```
 
-  Then use an "x64 Native Tools Command Prompt" (or restart your shell so `cl.exe`
-  is on `PATH`) before installing `tachywooting`.
+  ([reference](https://learn.microsoft.com/en-us/visualstudio/install/use-command-line-parameters-to-install-visual-studio)
+  for the flags above; exit code `3010` means success, reboot required — not an error.)
+
+  `pip install` usually finds the compiler on its own. If it can't find `cl.exe`,
+  open an "x64 Native Tools Command Prompt for VS" (or run `vcvars64.bat`) and retry.
 
 ### Quick Start
 
