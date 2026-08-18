@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tachywooting"
-version = "0.2.3"
+version = "0.2.4"
 description = "Python interface for Wooting analog keyboards"
 readme = "README.md"
 requires-python = ">=3.9,<3.15"
