@@ -8,7 +8,8 @@ RULES_FILE="/etc/udev/rules.d/70-wooting.rules"
 echo "Setting up Wooting udev rules following Wootility recommendations..."
 
 # Create comprehensive udev rules for all Wooting keyboards
-# Following: https://help.wooting.io/article/12-configuring-device-access-for-wootility-under-linux
+# Following: https://help.wooting.io/article/147-configuring-device-access-for-wootility-under-linux-udev-rules
+#   "https://help.wooting.io/" -> "Wootility" subsection -> "Configuring device access for Wootility under Linux (udev rules)"
 cat << 'EOF' | sudo tee "$RULES_FILE" > /dev/null
 # Wooting One Legacy
 SUBSYSTEM=="hidraw", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="ff01", MODE:="0660", GROUP="input", TAG+="uaccess"
