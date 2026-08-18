@@ -961,7 +961,7 @@ class WOOTING_ACQUISITION:
 
         raise TypeError("target_keys must be a list of all strings or all integers")
 
-    def _warn_invalid_keycodes(self, target_codes: Sequence[int]) -> None:
+    def _warn_invalid_keycodes(self, target_codes: Sequence[int]) -> list[int]:
         """Warn if any target keycode is not present on the connected Wooting device.
 
         Uses a raw ``read_analog`` probe at initialization time. The SDK returns
@@ -969,17 +969,31 @@ class WOOTING_ACQUISITION:
         on the device (e.g. asking for F1 on a 3-key UwU keyboard).
         """
         if not self.initialized or lib is None:
-            return
+            return []
         no_mapping = int(lib.WootingAnalogResult_NoMapping)
+        missing = []
         for code in target_codes:
             raw = float(lib.wooting_analog_read_analog(int(code)))
             if int(raw) == no_mapping:
+                missing.append(int(code))
                 label = convert_keycode_to_char(code) or str(code)
                 _log.warning(
                     "Keycode %d (%r) is not mapped on the connected Wooting device — "
                     "it will never register a press.",
                     code, label,
                 )
+        return missing
+
+    def validate_analog_keys(self, keys: Sequence[str | int], *, strict: bool = True) -> list[int]:
+        """Validate that all requested keys are mapped as analog keys."""
+        if not self.initialized:
+            raise ValueError('Keyboard must be initialized through "initialize_keyboard()".')
+        codes = self._to_keycodes(list(keys))
+        missing = self._warn_invalid_keycodes(codes)
+        if strict and missing:
+            labels = ", ".join(convert_keycode_to_char(code) or str(code) for code in missing)
+            raise RuntimeError(f"Analog key(s) not available on the connected Wooting keyboard: {labels}")
+        return codes
 
     def _ensure_target_cache(self, target_codes: Sequence[int]) -> tuple[tuple[int, ...], set[int]]:
         tgt_tuple = tuple(int(c) for c in target_codes)
@@ -1552,7 +1566,7 @@ class WOOTING_ACQUISITION:
                 "Use acquire_integer_values instead."
             )
 
-        self._warn_invalid_keycodes(self._to_keycodes(list(target_keys)))
+        self.validate_analog_keys(target_keys)
 
         result = self._acquire_raw_values(
             target_keys=target_keys,
@@ -1650,7 +1664,7 @@ class WOOTING_ACQUISITION:
                 "Use acquire_analog_values instead."
             )
 
-        self._warn_invalid_keycodes(self._to_keycodes(list(target_keys)))
+        self.validate_analog_keys(target_keys)
 
         result = self._acquire_raw_values(
             target_keys=target_keys,
@@ -1744,11 +1758,10 @@ class WOOTING_ACQUISITION:
             raise ValueError("timeout_seconds must be > 0 if provided")
 
         # --- resolve keycodes ---
-        target_codes = self._to_keycodes(target_keys)
-        self._warn_invalid_keycodes(target_codes)
+        target_codes = self.validate_analog_keys(target_keys)
 
         # >>> quit key resolution
-        quit_codes = self._to_keycodes([quit_key]) if quit_key is not None else []
+        quit_codes = self.validate_analog_keys([quit_key]) if quit_key is not None else []
         quit_code = int(quit_codes[0]) if quit_codes else None
 
         interval = 1.0 / 1000.0  # fixed 1000 Hz
