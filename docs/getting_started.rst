@@ -1,7 +1,7 @@
 TachyWooting
 ============
 
-|License: BSD-3-Clause| |Python versions| |Tests|
+|PyPI version| |License: BSD-3-Clause| |Python versions| |Tests|
 
 Python bindings and acquisition utilities for Wooting analog keyboards.
 
@@ -218,6 +218,8 @@ contactless magnetic sensors with a smooth linear force curve (30–45 cN,
 no tactile bump). Keys can be configured to actuate at any depth from
 0.1mm to 4.0mm.
 
+.. |PyPI version| image:: https://img.shields.io/pypi/v/tachywooting
+   :target: https://pypi.org/project/tachywooting/
 .. |License: BSD-3-Clause| image:: https://img.shields.io/badge/License-BSD_3--Clause-blue.svg
    :target: LICENSE
 .. |Python versions| image:: https://img.shields.io/pypi/pyversions/tachywooting

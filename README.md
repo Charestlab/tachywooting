@@ -1,5 +1,6 @@
 # TachyWooting
 
+[![PyPI version](https://img.shields.io/pypi/v/tachywooting)](https://pypi.org/project/tachywooting/)
 [![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](LICENSE)
 [![Python versions](https://img.shields.io/pypi/pyversions/tachywooting)](https://pypi.org/project/tachywooting/)
 [![Tests](https://github.com/Charestlab/tachywooting/actions/workflows/test-install.yml/badge.svg)](https://github.com/Charestlab/tachywooting/actions/workflows/test-install.yml)
