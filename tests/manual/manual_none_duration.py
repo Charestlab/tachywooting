@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-Test script for acquire_analog_values with duration_before_threshold=None
-Press 'C' key to trigger acquisition
+Manual hardware script (not run by pytest/CI) for acquire_analog_values with
+duration_before_threshold=None. Requires a physical Wooting keyboard.
+Press 'C' key to trigger acquisition. Run directly: python tests/manual/manual_none_duration.py
 """
-import time
 from tachywooting.wooting_utils import WOOTING_ACQUISITION
+
 
 def main():
     print("\n" + "="*60)
@@ -53,7 +54,7 @@ def main():
         time_from_onset = serie['time_from_onset']
         position = serie['position']
         
-        print(f"\n[5] Data summary:")
+        print("\n[5] Data summary:")
         print(f"    Total samples: {n_samples}")
         print(f"    Time span: {time_from_onset[0]:.4f}s to {time_from_onset[-1]:.4f}s")
         print(f"    Duration before threshold: {abs(time_from_onset[0]):.4f}s")
@@ -71,7 +72,7 @@ def main():
             print(f"    Samples before threshold: {threshold_idx}")
             print(f"    Samples after threshold: {n_samples - threshold_idx}")
         
-        print(f"\n[6] First 10 samples:")
+        print("\n[6] First 10 samples:")
         for i in range(min(10, n_samples)):
             print(f"    [{i:3d}] t={time_from_onset[i]:8.4f}s  pos={position[i]:.4f}")
         

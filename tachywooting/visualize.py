@@ -281,7 +281,7 @@ def _print_trial_header(
     if threshold is not None:
         print(f"  Threshold : {threshold:.3f}")
     _sep()
-    print(f"\n  KEY STATISTICS")
+    print("\n  KEY STATISTICS")
     _sep("─")
 
 

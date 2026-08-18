@@ -19,19 +19,19 @@ Usage examples:
     python -m wooting_demo --threshold 50
 """
 
+import signal
 import sys
 import time
-import signal
 from typing import Optional
 
 try:
-    from tqdm import tqdm
     from rich.console import Console
+    from tqdm import tqdm
 except ImportError:
     print('Error: Missing CLI dependencies. Install them with: pip install "tachywooting"')
     sys.exit(1)
 
-from tachywooting import lib, convert_char_to_keycode
+from tachywooting import convert_char_to_keycode, lib
 from tachywooting.wooting_utils import WOOTING_ACQUISITION
 
 # Global flag for graceful shutdown
@@ -180,7 +180,7 @@ def demo_key(key: str = "C", update_interval: float = 0.01, threshold: Optional[
         sys.exit(1)
 
     # Header
-    console.print(f"\n[bold cyan]Wooting Analog Keyboard Demo[/bold cyan]")
+    console.print("\n[bold cyan]Wooting Analog Keyboard Demo[/bold cyan]")
     console.print(f"[dim]Monitoring key: [bold]{key.upper()}[/bold][/dim]\n")
 
     # Initialize keyboard acquisition
@@ -192,14 +192,14 @@ def demo_key(key: str = "C", update_interval: float = 0.01, threshold: Optional[
         console.print("[dim]Make sure your Wooting keyboard is connected and permissions are set up.[/dim]")
         sys.exit(1)
 
-    console.print(f"\n[green]✓[/green] Keyboard initialized successfully!")
-    console.print(f"[dim]Press Ctrl+C to exit[/dim]\n")
+    console.print("\n[green]✓[/green] Keyboard initialized successfully!")
+    console.print("[dim]Press Ctrl+C to exit[/dim]\n")
 
     # Optional threshold: convert from percent [0,100] to normalized [0,1]
     threshold_normalized = None
     if threshold is not None:
         if threshold < 0 or threshold > 100:
-            console.print(f"[red]Error:[/red] Threshold must be between 0 and 100")
+            console.print("[red]Error:[/red] Threshold must be between 0 and 100")
             sys.exit(1)
         threshold_normalized = threshold / 100.0
         threshold_uint8 = int(threshold_normalized * 255)
@@ -278,7 +278,7 @@ def demo_key(key: str = "C", update_interval: float = 0.01, threshold: Optional[
         pbar.close()
         try:
             acquisition.uninitialize_keyboard()
-            console.print(f"\n[green]✓[/green] Keyboard uninitialized. Goodbye!")
+            console.print("\n[green]✓[/green] Keyboard uninitialized. Goodbye!")
         except Exception as e:
             console.print(f"\n[yellow]Warning:[/yellow] Error during cleanup: {e}")
 

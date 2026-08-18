@@ -27,14 +27,14 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
         extras: ["", "dev", "all"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true   # needed for 3.14, harmless for earlier versions
@@ -73,13 +73,13 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
@@ -97,8 +97,10 @@ jobs:
         run: pytest tests/ -v --tb=short
 
   # ── Verify the native CFFI interface actually compiles on each OS ───────────
-  # abi3 (stable ABI) means one build per OS covers every Python version, so
-  # this only needs a single representative interpreter.
+  # One Python version is enough here — the `install` job's matrix already
+  # compiles this extension on every supported version. This job instead
+  # exercises the standalone wooting-build-interface rebuild path and
+  # inspects the resulting binary (ldd, successful import).
   build-interface:
     name: "build interface / ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
@@ -108,10 +110,10 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 

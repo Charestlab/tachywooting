@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tachywooting"
-version = "0.2.2"
+version = "0.2.3"
 description = "Python interface for Wooting analog keyboards"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.9,<3.15"
 license = "BSD-3-Clause"
 license-files = ["LICENSE"]
 authors = [
@@ -20,10 +20,12 @@ classifiers = [
     "Operating System :: MacOS",
     "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX :: Linux",
-    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
@@ -90,7 +92,7 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "py39"
 
 [tool.ruff.lint]
 select = ["B", "E", "F", "I", "UP"]

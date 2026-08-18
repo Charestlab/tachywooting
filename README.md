@@ -1,5 +1,6 @@
 # TachyWooting
 
+[![PyPI version](https://img.shields.io/pypi/v/tachywooting)](https://pypi.org/project/tachywooting/)
 [![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](LICENSE)
 [![Python versions](https://img.shields.io/pypi/pyversions/tachywooting)](https://pypi.org/project/tachywooting/)
 [![Tests](https://github.com/Charestlab/tachywooting/actions/workflows/test-install.yml/badge.svg)](https://github.com/Charestlab/tachywooting/actions/workflows/test-install.yml)
@@ -35,10 +36,33 @@ Console scripts are documented in [docs/scripts.md](docs/scripts.md).
 
 ## Requirements
 
-- Python 3.10 or newer.
+- Python 3.9 or newer (through 3.14).
 - A supported Wooting analog keyboard.
-- A local compiler toolchain for the CFFI interface build.
+- A local compiler toolchain for the CFFI interface build (see below).
 - Platform-specific permissions for USB/native library access.
+
+### Compiler Setup
+
+The CFFI extension is compiled on your machine, not shipped as a prebuilt binary, so
+you need a C compiler available before the interface can be built.
+
+- **macOS**: install the Xcode Command Line Tools: `xcode-select --install`.
+- **Linux**: install `gcc` via your package manager, e.g. `sudo apt install build-essential`
+  (Debian/Ubuntu) or `sudo dnf groupinstall "Development Tools"` (Fedora).
+- **Windows**: install the "Desktop development with C++" workload from the
+  [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+  (no full Visual Studio install needed), or from an **elevated** PowerShell
+  prompt (Run as administrator), run:
+
+  ```powershell
+  winget install -e --id Microsoft.VisualStudio.BuildTools --override "--passive --wait --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --includeRecommended"
+  ```
+
+  ([reference](https://learn.microsoft.com/en-us/visualstudio/install/use-command-line-parameters-to-install-visual-studio)
+  for the flags above; exit code `3010` means success, reboot required — not an error.)
+
+  `pip install` usually finds the compiler on its own. If it can't find `cl.exe`,
+  open an "x64 Native Tools Command Prompt for VS" (or run `vcvars64.bat`) and retry.
 
 ### Quick Start
 

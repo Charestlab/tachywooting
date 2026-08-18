@@ -216,9 +216,16 @@ The Gatekeeper setup should handle code signing automatically, but if you encoun
 wooting-build-interface
 ```
 
+No Wooting-specific doc for this. `wooting-build-interface` runs
+[`PERMISSIONS_mac.sh`](tachywooting/permissions/PERMISSIONS_mac.sh) — see that file for what
+the `xattr`/`codesign` flags do.
+
 ### Linux: "Permission denied" when accessing keyboard
 
 **Problem**: User is not in the `input` group or udev rules are not applied
+
+The udev rules `tachywooting` installs follow Wooting's own official recommendations:
+[Configuring device access for Wootility under Linux (udev rules)](https://help.wooting.io/article/147-configuring-device-access-for-wootility-under-linux-udev-rules).
 
 **Solution**:
 

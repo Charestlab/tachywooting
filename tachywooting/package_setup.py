@@ -35,7 +35,6 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-
 # --- Paths ---
 _PKG_DIR = os.path.dirname(os.path.abspath(__file__))
 _INTERFACE_DIR = os.path.join(_PKG_DIR, "interface")
@@ -283,7 +282,7 @@ def uninstall_plugins() -> None:
                 except subprocess.CalledProcessError as e:
                     print(f"[Wooting] Failed to remove udev rules: {e}")
 
-        print(f"[Wooting] SDK and plugins removed successfully.")
+        print("[Wooting] SDK and plugins removed successfully.")
 
     except subprocess.CalledProcessError as e:
         print(f"[Wooting] Failed to remove (may require sudo): {e}")
