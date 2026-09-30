@@ -86,3 +86,6 @@ tachywooting/interface/*
 *.npz
 plot.png
 act-install.log
+
+# Scratch files
+tmp/

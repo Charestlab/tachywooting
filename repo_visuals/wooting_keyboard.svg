@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="808" height="606" viewBox="0 0 808 606" role="img" aria-labelledby="title description">
+  <title id="title">Wooting UwU — Z, X et C avec dessins en filigrane</title>
+  <desc id="description">Clavier vectoriel sur fond transparent. Trois touches blanches marquées Z, X et C, avec les dessins originaux U, w, U en filigrane très pâle derrière les lettres dans un boîtier crème avec zone supérieure bleu foncé et trois segments roses. Pour afficher un appui, ajouter la classe pressed au groupe key-left, key-center ou key-right.</desc>
+  <defs>
+    <clipPath id="case-clip"><rect x="8" y="8" width="792" height="590" rx="120"/></clipPath>
+  </defs>
+  <style>
+    .key-face { fill: #FFFFFF; }
+    .key.pressed .key-face { fill: #F48DB0; }
+    .key.pressed .indicator { fill: #FFBAD3; }
+    .key-label { fill: #252A34; font-family: Arial, Helvetica, sans-serif; font-size: 72px; font-weight: 700; text-anchor: middle; }
+    .key-artwork { fill: none; stroke: #252A34; stroke-width: 11; stroke-linecap: round; stroke-linejoin: round; opacity: 0.12; }
+  </style>
+
+  <!-- Fond extérieur transparent. Boîtier entièrement vectoriel. -->
+  <g id="case">
+    <rect x="8" y="8" width="792" height="590" rx="120" fill="#F0F0ED"/>
+    <g clip-path="url(#case-clip)">
+      <path id="upper-panel" d="M8 8 H800 V142 H8 Z" fill="#252A34"/>
+    </g>
+    <rect x="8" y="8" width="792" height="590" rx="120" fill="none" stroke="#252A34" stroke-width="6"/>
+  </g>
+
+  <!-- Logo vectoriel issu de https://wooting.io/ -->
+  <g id="brand-mark" transform="translate(356.8 47.7) scale(1.6)" fill="#F7F7F5">
+    <path d="M0.247375 0V36.6077H59V0H0.247375ZM54.0048 31.8223H5.24254V4.78531H54.0048V31.8223Z"/>
+    <path d="M46.1458 26.5585L48.6529 10.5277H41.7548L40.5012 19.6198H33.439V10.5277H26.3031V19.6198H18.7461L17.4902 10.5277H10.5945L13.1016 26.5585H46.1458Z"/>
+  </g>
+
+  <rect id="key-bed" x="82" y="174" width="644" height="226" rx="25" fill="#252A34"/>
+  <rect id="bar-bed" x="197" y="464" width="414" height="72" rx="36" fill="#252A34"/>
+
+  <!-- Chaque groupe associe une touche à son segment lumineux. -->
+  <g id="key-left" class="key" data-key="left">
+    <title>Touche gauche — Z</title>
+    <rect id="key-left-face" class="key-face" x="100" y="185" width="192" height="192" rx="21"/>
+    <path id="artwork-left" class="key-artwork" d="M145 238 C148 294 158 323 196 323 C234 323 244 294 247 238"/>
+    <text id="label-left" class="key-label" x="196" y="307">Z</text>
+    <path id="bar-left" class="indicator" d="M233 470 H331 Q337 470 337 476 V524 Q337 530 331 530 H233 A30 30 0 0 1 233 470 Z" fill="#E878A0"/>
+  </g>
+
+  <g id="key-center" class="key" data-key="center">
+    <title>Touche centrale — X</title>
+    <rect id="key-center-face" class="key-face" x="308" y="185" width="192" height="192" rx="21"/>
+    <path id="artwork-center" class="key-artwork" d="M375 323 C386 342 394 345 404 332 C414 345 422 342 433 323"/>
+    <text id="label-center" class="key-label" x="404" y="307">X</text>
+    <rect id="bar-center" class="indicator" x="347" y="470" width="114" height="60" rx="6" fill="#E878A0"/>
+  </g>
+
+  <g id="key-right" class="key" data-key="right">
+    <title>Touche droite — C</title>
+    <rect id="key-right-face" class="key-face" x="516" y="185" width="192" height="192" rx="21"/>
+    <path id="artwork-right" class="key-artwork" d="M561 238 C564 294 574 323 612 323 C650 323 660 294 663 238"/>
+    <text id="label-right" class="key-label" x="612" y="307">C</text>
+    <path id="bar-right" class="indicator" d="M477 470 H575 A30 30 0 0 1 575 530 H477 Q471 530 471 524 V476 Q471 470 477 470 Z" fill="#E878A0"/>
+  </g>
+</svg>

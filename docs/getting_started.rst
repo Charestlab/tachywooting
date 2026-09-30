@@ -213,7 +213,7 @@ This package was developed and tested with the **Wooting UwU** keypad
 (`wooting.io/uwu <https://wooting.io/uwu>`__), and its use is strongly
 recommended for optimal results.
 
-.. figure:: ../repo_visuals/UwU_keyboard.png
+.. figure:: ../repo_visuals/wooting_keyboard.svg
    :alt: Wooting UwU keypad
 
    Wooting UwU keypad
