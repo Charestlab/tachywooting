@@ -1276,6 +1276,7 @@ class WOOTING_ACQUISITION:
         callback: Callable[[], None] | None = None,
         callback_delay: float | None = None,
         quit_key: str | int | None = None,
+        threshold_callback: Callable[[], None] | None = None,
     ) -> dict[str, dict[str, dict[str, np.ndarray]]]:
         """
         Low-level acquisition of analog key positions around a threshold crossing.
@@ -1397,8 +1398,16 @@ class WOOTING_ACQUISITION:
                         trigger_key = int(s["key"])
                         triggered = True
                         callback_done = True
+                        if threshold_callback is not None:
+                            try:
+                                threshold_callback()
+                            except Exception as e:
+                                raise RuntimeError("Threshold callback failed.") from e
                         break
-                buffer_pre_threshold.extend(snapshot)
+                # The crossing snapshot is recorded below as the first post-threshold
+                # sample, so only buffer snapshots that did not trigger the response.
+                if not triggered:
+                    buffer_pre_threshold.extend(snapshot)
 
             if triggered:
                 if getattr(self, "count_post_threshold_removals", False) and self._snapshot_has_finger_removal(
@@ -1464,6 +1473,7 @@ class WOOTING_ACQUISITION:
         callback: Callable[[], None] | None = None,
         callback_delay: float | None = None,
         quit_key: str | int | None = None,
+        threshold_callback: Callable[[], None] | None = None,
     ):
         """
         Acquire analog key trajectories (0.0–1.0) around a threshold crossing.
@@ -1485,6 +1495,14 @@ class WOOTING_ACQUISITION:
         at a precise time after `trial_start_ns`, *unless* the threshold is reached first.
         This is useful to display a stimulus or send a marker while preserving a single
         continuous acquisition timeline.
+
+        Optional threshold callback
+        ---------------------------
+        ``threshold_callback`` runs once, immediately when a target key crosses the
+        acquisition threshold. The crossing sample and the following
+        ``duration_after_threshold`` seconds are included in the returned data and in
+        HDF5 logging when enabled. The callback runs synchronously, so keep it short;
+        its execution time is part of the post-threshold wall-clock interval.
 
         Optional quit-key detection (no forced exit)
         --------------------------------------------
@@ -1527,6 +1545,11 @@ class WOOTING_ACQUISITION:
         callback_delay : float or None, default=None
             Delay (seconds) after `trial_start_ns` at which to execute `callback`.
             Must be > 0 if `callback` is provided.
+
+        threshold_callback : callable or None, default=None
+            Optional zero-argument callable executed once when the response threshold
+            is crossed, before post-threshold sampling continues. Useful for changing
+            the display immediately after a response without ending acquisition.
 
         quit_key : str or int or None, default=None
             Optional key to monitor during acquisition (e.g., 'Esc').
@@ -1578,6 +1601,7 @@ class WOOTING_ACQUISITION:
             trial_start_clock=trial_start_clock,
             callback=callback,
             callback_delay=callback_delay,
+            threshold_callback=threshold_callback,
             quit_key=quit_key,
         )
 
@@ -1612,6 +1636,7 @@ class WOOTING_ACQUISITION:
         callback: Callable[[], None] | None = None,
         callback_delay: float | None = None,
         quit_key: str | int | None = None,
+        threshold_callback: Callable[[], None] | None = None,
     ):
         """
         Acquire quantized (integer) key trajectories (0–255) around a threshold crossing.
@@ -1625,6 +1650,9 @@ class WOOTING_ACQUISITION:
         Same semantics as `acquire_analog_values`: a one-shot `callback()` can be executed
         after `callback_delay` seconds from `trial_start_ns`, unless the threshold occurs
         first (then it is canceled).
+
+        ``threshold_callback`` has the same semantics as in
+        ``acquire_analog_values`` and runs once at the threshold crossing.
 
         Optional quit-key detection (no forced exit)
         --------------------------------------------
@@ -1676,6 +1704,7 @@ class WOOTING_ACQUISITION:
             trial_start_clock=trial_start_clock,
             callback=callback,
             callback_delay=callback_delay,
+            threshold_callback=threshold_callback,
             quit_key=quit_key,
         )
 
