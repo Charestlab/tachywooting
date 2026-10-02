@@ -1,10 +1,12 @@
 import os
 import re
 import sys
+from pathlib import Path
 
 import pytest
 
 import tachywooting
+import tachywooting.wooting_utils as wooting_utils
 from tachywooting import (
     WOOTING_ACQUISITION,
     convert_char_to_keycode,
@@ -32,7 +34,7 @@ def test_acquisition_requires_native_interface_when_missing():
 
 
 def test_interface_console_scripts_target_package_setup():
-    pyproject_text = open("pyproject.toml", encoding="utf-8").read()
+    pyproject_text = (Path(__file__).parents[1] / "pyproject.toml").read_text(encoding="utf-8")
 
     assert re.search(
         r'^wooting-build-interface\s*=\s*"tachywooting\.package_setup:run_post_install"$',
@@ -47,7 +49,7 @@ def test_interface_console_scripts_target_package_setup():
 
 
 def test_package_does_not_expose_tachypy_feedback_extra_or_scripts():
-    pyproject_text = open("pyproject.toml", encoding="utf-8").read()
+    pyproject_text = (Path(__file__).parents[1] / "pyproject.toml").read_text(encoding="utf-8")
 
     assert "[project.optional-dependencies]" in pyproject_text
     assert "tachywooting[tachypy]" not in pyproject_text
@@ -423,6 +425,109 @@ def test_pre_threshold_missing_contact_flags_trial_removal():
     )
 
     assert tracker._pending_trial_had_removal is True
+
+
+def test_threshold_callback_runs_once_while_post_threshold_samples_continue(monkeypatch):
+    tracker = WOOTING_ACQUISITION.__new__(WOOTING_ACQUISITION)
+    tracker.threshold = 0.8
+    tracker.finger_present_threshold = 0.01
+    tracker.trial = 1
+    tracker._to_keycodes = lambda keys: [1, 2]
+    tracker._wait_until_next_tick = lambda next_t: None
+    tracker._last_trial_start_perf_ns = None
+    tracker._last_stim_on_clock = None
+
+    samples = [
+        {1: 0.5, 2: 0.5},
+        {1: 0.9, 2: 0.5},
+        {1: 0.85, 2: 0.5},
+        {1: 0.82, 2: 0.5},
+    ]
+    perf_ns = iter([
+        1_000_000_000,  # acquisition anchor
+        1_000_000_000,  # pre-threshold sample
+        1_100_000_000,  # threshold crossing
+        1_300_000_000,  # post-threshold sample
+        1_600_000_000,  # 0.5 s after threshold
+    ])
+    monkeypatch.setattr(wooting_utils.time, "perf_counter_ns", lambda: next(perf_ns))
+    callback_calls = []
+    reads = 0
+
+    def read_positions(target_codes):
+        nonlocal reads
+        reads += 1
+        if samples:
+            return samples.pop(0)
+        return {1: 0.9, 2: 0.5}
+
+    tracker._read_positions_for_targets = read_positions
+    hier = tracker._acquire_raw_values(
+        target_keys=["z", "c"],
+        duration_after_threshold=0.5,
+        duration_before_threshold=0.2,
+        sampling_interval=0.000001,
+        threshold_callback=lambda: callback_calls.append(reads),
+    )
+
+    assert callback_calls == [2]
+    assert reads == 4
+    assert hier["1"]["1"]["position"].tolist() == [0.5, 0.9, 0.85, 0.82]
+    assert hier["1"]["1"]["time_from_onset"].tolist() == pytest.approx(
+        [0.0, 0.1, 0.3, 0.6]
+    )
+    assert hier["1"]["_attrs"]["threshold_time"] == pytest.approx(0.1)
+    assert (
+        hier["1"]["1"]["time_from_onset"][-1]
+        - hier["1"]["_attrs"]["threshold_time"]
+    ) == pytest.approx(0.5)
+
+
+def test_threshold_callback_exception_is_wrapped_in_runtime_error():
+    tracker = WOOTING_ACQUISITION.__new__(WOOTING_ACQUISITION)
+    tracker.threshold = 0.8
+    tracker.finger_present_threshold = 0.01
+    tracker.trial = 1
+    tracker._to_keycodes = lambda keys: [1, 2]
+    tracker._wait_until_next_tick = lambda next_t: None
+    tracker._read_positions_for_targets = lambda codes: {1: 0.9, 2: 0.0}
+
+    def failing_callback():
+        raise ValueError("boom")
+
+    with pytest.raises(RuntimeError, match="Threshold callback failed.") as excinfo:
+        tracker._acquire_raw_values(
+            target_keys=["z", "c"],
+            duration_after_threshold=0.5,
+            sampling_interval=0.000001,
+            threshold_callback=failing_callback,
+        )
+
+    assert isinstance(excinfo.value.__cause__, ValueError)
+
+
+@pytest.mark.parametrize("method_name", ["acquire_analog_values", "acquire_integer_values"])
+def test_public_acquire_methods_forward_threshold_callback(method_name):
+    tracker = WOOTING_ACQUISITION.__new__(WOOTING_ACQUISITION)
+    tracker.initialized = True
+    tracker.logging_enabled = False
+    tracker.trial = 1
+    tracker.validate_analog_keys = lambda keys: None
+    tracker._record_trial_removal_status = lambda **kwargs: None
+    received = {}
+
+    def fake_acquire_raw_values(**kwargs):
+        received.update(kwargs)
+        return {"1": {"1": {"position": [0.5]}}}
+
+    tracker._acquire_raw_values = fake_acquire_raw_values
+
+    def marker():
+        pass
+
+    getattr(tracker, method_name)(target_keys=["z", "c"], threshold_callback=marker)
+
+    assert received["threshold_callback"] is marker
 
 
 def test_post_threshold_missing_contact_is_optional_for_trial_removal():

@@ -100,6 +100,51 @@ Acquisition
 
    data = acq.acquire_analog_values(target_keys=["z", "c"])
 
+Show a blank immediately after the response while continuing to record pressure:
+
+.. code:: python
+
+   def show_response_blank():
+       screen.fill((128, 128, 128))
+       screen.flip()
+
+   data = acq.acquire_analog_values(
+       target_keys=["z", "c"],
+       duration_after_threshold=0.5,
+       threshold_callback=show_response_blank,
+   )
+
+``threshold_callback`` runs once when either target key crosses the response
+threshold. The crossing sample and the following ``duration_after_threshold``
+seconds remain in ``data`` and, when logging is enabled, in the trial's HDF5
+file. Keep the callback short because acquisition resumes after it returns; its
+execution time is part of that post-threshold wall-clock interval.
+
+This is especially useful when the post-response recording period should also
+be the inter-trial blank. In the example above, the blank begins at the response
+and TachyWooting records during the same 0.5 seconds. Do not add another
+0.5-second blank afterward, or the response-to-next-trial interval would become
+1.0 second. If the desired blank is longer than the recording period, wait only
+for the remainder:
+
+.. code:: python
+
+   import time
+
+   blank_duration = 0.8
+   post_response_recording = 0.5
+
+   data = acq.acquire_analog_values(
+       target_keys=["z", "c"],
+       duration_after_threshold=post_response_recording,
+       threshold_callback=show_response_blank,
+   )
+   time.sleep(max(0.0, blank_duration - post_response_recording))
+
+This differs from ``callback`` with ``callback_delay``: that callback runs at a
+scheduled time before a response, and is canceled if the threshold is crossed
+first.
+
 Logging
 -------
 
