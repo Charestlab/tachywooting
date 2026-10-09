@@ -1,5 +1,7 @@
 import os
 import re
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -334,6 +336,111 @@ def test_macos_gatekeeper_uses_release_directory(monkeypatch, tmp_path):
     assert (["xattr", "-dr", "com.apple.quarantine", str(release_dir)], False) in calls
     assert (["codesign", "--force", "--sign", "-", str(sdk_file)], False) in calls
     assert (["codesign", "--force", "--sign", "-", str(sdk_dist_file)], False) in calls
+
+
+# ── Vendored binary completeness ────────────────────────────────────────────
+#
+# The tests above mock the filesystem and only check that install_plugins()
+# *tries* to copy whatever plugin file happens to exist in the release
+# directory. None of them notice when the vendored release directory itself
+# is missing the plugin binary that actually talks to the hardware: the SDK
+# dispatcher alone loads fine and reports WootingAnalogResult_NoPlugins
+# (finds zero devices) even with perfect udev/ACL permissions. That gap
+# shipped broken installs on every platform (0.2.4, 0.2.5) until it was
+# caught manually. These tests inspect the real committed tree so CI fails
+# loudly instead.
+
+_PLUGIN_EXPECTATIONS = [
+    pytest.param(
+        "tachywooting/libraries/linux/release",
+        "libwooting_analog_plugin.so",
+        id="linux",
+    ),
+    pytest.param(
+        "tachywooting/libraries/darwin/x86_64/release",
+        "libwooting_analog_plugin.dylib",
+        id="darwin-x86_64",
+        marks=pytest.mark.xfail(
+            reason="darwin plugin binary not yet vendored (same gap as linux, unfixed)",
+            strict=False,
+        ),
+    ),
+    pytest.param(
+        "tachywooting/libraries/darwin/arm64/release",
+        "libwooting_analog_plugin.dylib",
+        id="darwin-arm64",
+        marks=pytest.mark.xfail(
+            reason="darwin plugin binary not yet vendored (same gap as linux, unfixed)",
+            strict=False,
+        ),
+    ),
+    pytest.param(
+        "tachywooting/libraries/windows/release",
+        "wooting_analog_plugin.dll",
+        id="windows",
+        marks=pytest.mark.xfail(
+            reason="windows plugin binary not yet vendored (same gap as linux, unfixed)",
+            strict=False,
+        ),
+    ),
+]
+
+
+@pytest.mark.parametrize(("release_dir", "plugin_filename"), _PLUGIN_EXPECTATIONS)
+def test_vendored_release_ships_required_plugin_binary(release_dir, plugin_filename):
+    """install_plugins() can only install a plugin that actually ships in the repo.
+
+    A release/ directory with just the SDK dispatcher .so/.dylib/.dll is not
+    enough: wooting_analog_initialise() will load, run, and report zero
+    devices (WootingAnalogResult_NoPlugins) regardless of hardware or OS
+    permissions.
+    """
+    plugin_path = os.path.join(release_dir, plugin_filename)
+    assert os.path.isfile(plugin_path), (
+        f"{plugin_path} is missing: wooting-build-interface will silently skip "
+        "plugin installation and the SDK will never detect a connected device"
+    )
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="patchelf/ELF soname check only applies to the .so build")
+def test_ensure_sane_shared_lib_name_fixes_broken_upstream_soname(tmp_path):
+    """Lock in the self-heal for the upstream v0.9.1 Linux release, which embeds
+    a broken DT_SONAME (``./target/release/libwooting_analog_sdk_dist.so``) in
+    ``libwooting_analog_sdk_dist.so``. Linking against that name makes the
+    compiled CFFI extension record the same bogus path as its own DT_NEEDED
+    entry, so the dynamic linker can never resolve it at runtime --
+    ``ImportError: ./target/release/libwooting_analog_sdk_dist.so: cannot open
+    shared object file`` -- even though the real file sits right next to it.
+    ``_ensure_sane_shared_lib_name`` is what's supposed to fix this at build
+    time; this test breaks the soname on a scratch copy and asserts it gets
+    repaired, so a future refactor that silently drops the call is caught.
+    """
+    patchelf = shutil.which("patchelf")
+    if not patchelf:
+        pytest.skip("patchelf not available in this environment")
+
+    source = os.path.join(
+        "tachywooting", "libraries", "linux", "release", "libwooting_analog_sdk_dist.so"
+    )
+    if not os.path.isfile(source):
+        pytest.skip("vendored libwooting_analog_sdk_dist.so not present")
+
+    scratch = tmp_path / "libwooting_analog_sdk_dist.so"
+    shutil.copy2(source, scratch)
+    subprocess.run(
+        [patchelf, "--set-soname", "./target/release/libwooting_analog_sdk_dist.so", str(scratch)],
+        check=True,
+    )
+
+    wooting_interface_builder._ensure_sane_shared_lib_name(str(scratch), "libwooting_analog_sdk_dist.so")
+
+    soname = subprocess.run(
+        [patchelf, "--print-soname", str(scratch)],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    assert soname == "libwooting_analog_sdk_dist.so"
 
 
 def test_removal_tracking_statistics():
